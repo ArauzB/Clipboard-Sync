@@ -1,4 +1,4 @@
-//Si desea conectarse necesita cambiar la linea 114 con las IPs que desea conectar, puede ser local o con una VPN
+//Si desea conectarse necesita cambiar la linea 116 con las IPs que desea conectar, puede ser local o con una VPN
 
 import net from 'net';
 import os from 'os';
