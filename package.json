@@ -1,0 +1,27 @@
+{
+  "name": "descentralizacion",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node --experimental-modules prueba.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "clipboard-event": "^1.6.0",
+    "clipboardy": "^4.0.0",
+    "dgram": "^1.0.1",
+    "engine.io": "^6.5.4",
+    "express": "^4.19.2",
+    "fs": "^0.0.1-security",
+    "is-image": "^4.0.0",
+    "node-clipboard": "^1.2.0",
+    "os": "^0.1.2",
+    "socket.io": "^4.7.5",
+    "uuid": "^9.0.1"
+  }
+}
