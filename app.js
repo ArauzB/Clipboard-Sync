@@ -1,3 +1,5 @@
+//Si desea conectarse necesita cambiar la linea 114 con las IPs que desea conectar, puede ser local o con una VPN
+
 import net from 'net';
 import os from 'os';
 import clipboardy from 'clipboardy';
@@ -111,7 +113,7 @@ const server = net.createServer((socket) => {
 server.on('listening', () => {
     console.log(`Node is listening for TCP connections on port ${PORT}`);
 
-    const knownNodeAddresses = ['100.64.196.59', '100.68.51.19'];
+    const knownNodeAddresses = ['100.64.196.59', '100.68.51.19']; //Cambiar la ips que desea conectarse
 
     knownNodeAddresses.forEach((nodeAddress) => {
         if (!localIpAddresses.includes(nodeAddress) && nodeAddress !== '127.0.0.1') {
