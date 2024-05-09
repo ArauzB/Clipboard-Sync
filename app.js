@@ -5,6 +5,8 @@ import clipboardy from 'clipboardy';
 const PORT = 3000;
 const RECONNECT_INTERVAL = 5000;
 
+
+//Obtener todas la IP
 const networkInterfaces = os.networkInterfaces();
 const localIpAddresses = Object.keys(networkInterfaces)
     .flatMap((key) => networkInterfaces[key])
@@ -13,6 +15,9 @@ const localIpAddresses = Object.keys(networkInterfaces)
 
 let lastClipboardData = clipboardy.readSync();
 const connectedNodes = new Map();
+
+
+
 
 function connectToNode(nodeAddress) {
     if (connectedNodes.has(nodeAddress)) {
@@ -61,6 +66,8 @@ function connectToNode(nodeAddress) {
     });
 }
 
+//Crea el servidor socket
+
 const server = net.createServer((socket) => {
     const normalizedAddress = socket.remoteAddress.replace(/^.*:/, '');
     console.log(`Node connected: ${normalizedAddress}:${socket.remotePort}`);
@@ -99,6 +106,8 @@ const server = net.createServer((socket) => {
     connectedNodes.set(normalizedAddress, socket);
 });
 
+
+//Escucha las conexiones 
 server.on('listening', () => {
     console.log(`Node is listening for TCP connections on port ${PORT}`);
 
