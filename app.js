@@ -1,3 +1,8 @@
+<<<<<<< HEAD
+=======
+//Si desea conectarse necesita cambiar la linea 116 con las IPs que desea conectar, puede ser local o con una VPN
+
+>>>>>>> 1e225bcfb5b5be1a8ebf239fc0b1f5256de56c3d
 import net from 'net';
 import os from 'os';
 import clipboardy from 'clipboardy';
