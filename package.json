@@ -16,12 +16,19 @@
     "clipboardy": "^4.0.0",
     "dgram": "^1.0.1",
     "engine.io": "^6.5.4",
+    "events": "^3.3.0",
     "express": "^4.19.2",
     "fs": "^0.0.1-security",
+    "image-size": "^1.1.1",
+    "image-type": "^5.2.0",
     "is-image": "^4.0.0",
+    "is-image-url": "^1.1.8",
     "node-clipboard": "^1.2.0",
+    "node-fetch": "^3.3.2",
     "os": "^0.1.2",
+    "path": "^0.12.7",
     "socket.io": "^4.7.5",
+    "util": "^0.12.5",
     "uuid": "^9.0.1"
   }
 }

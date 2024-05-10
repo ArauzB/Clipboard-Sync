@@ -1,5 +1,3 @@
-//Si desea conectarse necesita cambiar la linea 114 con las IPs que desea conectar, puede ser local o con una VPN
-
 import net from 'net';
 import os from 'os';
 import clipboardy from 'clipboardy';
@@ -7,30 +5,36 @@ import clipboardy from 'clipboardy';
 const PORT = 3000;
 const RECONNECT_INTERVAL = 5000;
 
-
-//Obtener todas la IP
+// Obtener todas las direcciones IP locales
 const networkInterfaces = os.networkInterfaces();
-const localIpAddresses = Object.keys(networkInterfaces)
-    .flatMap((key) => networkInterfaces[key])
+const localIpAddresses = Object.values(networkInterfaces)
+    .flatMap((iface) => iface)
     .filter((iface) => iface.family === 'IPv4' && !iface.internal)
     .map((iface) => iface.address);
 
-let lastClipboardData = clipboardy.readSync();
+let lastClipboardData = getClipboardText();
 const connectedNodes = new Map();
 
-
-
+// Función para obtener el texto del portapapeles de manera segura
+function getClipboardText() {
+    try {
+        return clipboardy.readSync().trim();
+    } catch (error) {
+        console.error('Error al intentar leer el portapapeles:', error.message);
+        return ''; // Devolver una cadena vacía en caso de error
+    }
+}
 
 function connectToNode(nodeAddress) {
     if (connectedNodes.has(nodeAddress)) {
-        console.log(`Already connected to node at ${nodeAddress}:${PORT}`);
+        console.log(`Ya conectado al nodo en ${nodeAddress}:${PORT}`);
         return;
     }
 
     const client = new net.Socket();
 
     client.on('error', (err) => {
-        console.error(`TCP connection error with node ${nodeAddress}:${PORT}:`, err.message);
+        console.error(`Error de conexión TCP con el nodo ${nodeAddress}:${PORT}:`, err.message);
         client.destroy();
         connectedNodes.delete(nodeAddress);
 
@@ -40,14 +44,16 @@ function connectToNode(nodeAddress) {
     });
 
     client.connect(PORT, nodeAddress, () => {
-        console.log(`Connected to node at ${nodeAddress}:${PORT}`);
+        console.log(`Conectado al nodo en ${nodeAddress}:${PORT}`);
         connectedNodes.set(nodeAddress, client);
 
-        client.write(lastClipboardData);
+        if (lastClipboardData) {
+            client.write(lastClipboardData);
+        }
     });
 
     client.on('close', () => {
-        console.log(`Connection closed with node ${nodeAddress}:${PORT}`);
+        console.log(`Conexión cerrada con el nodo ${nodeAddress}:${PORT}`);
         connectedNodes.delete(nodeAddress);
 
         setTimeout(() => {
@@ -57,81 +63,74 @@ function connectToNode(nodeAddress) {
 
     client.on('data', (data) => {
         const receivedData = data.toString().trim();
-        console.log(`Received from node ${nodeAddress}:${PORT}: ${receivedData}`);
+        console.log(`Recibido del nodo ${nodeAddress}:${PORT}: ${receivedData}`);
 
-        // Actualizar el portapapeles local solo si el mensaje recibido es diferente
         if (receivedData !== lastClipboardData) {
-            clipboardy.writeSync(receivedData);
-            console.log(`Updated local clipboard with data received from ${nodeAddress}:${PORT}: ${receivedData}`);
-            lastClipboardData = receivedData; // Actualizar el último contenido del portapapeles
+            updateClipboard(receivedData);
         }
     });
 }
 
-//Crea el servidor socket
+function updateClipboard(newData) {
+    if (typeof newData !== 'string' || newData.trim().length === 0) {
+        console.log('No se puede actualizar el portapapeles con datos no válidos.');
+        return;
+    }
+
+    try {
+        clipboardy.writeSync(newData);
+        console.log(`Actualizado el portapapeles local con datos recibidos: ${newData}`);
+        lastClipboardData = newData;
+    } catch (error) {
+        console.error('Error al intentar actualizar el portapapeles:', error.message);
+    }
+}
 
 const server = net.createServer((socket) => {
     const normalizedAddress = socket.remoteAddress.replace(/^.*:/, '');
-    console.log(`Node connected: ${normalizedAddress}:${socket.remotePort}`);
+    console.log(`Nodo conectado: ${normalizedAddress}:${socket.remotePort}`);
 
     socket.write(lastClipboardData);
 
     socket.on('error', (err) => {
-        console.error(`TCP connection error with node ${normalizedAddress}:${socket.remotePort}:`, err.message);
+        console.error(`Error de conexión TCP con el nodo ${normalizedAddress}:${socket.remotePort}:`, err.message);
         socket.destroy();
     });
 
     socket.on('data', (data) => {
         const receivedData = data.toString().trim();
-        console.log(`Received from node ${normalizedAddress}:${socket.remotePort}: ${receivedData}`);
+        console.log(`Recibido del nodo ${normalizedAddress}:${socket.remotePort}: ${receivedData}`);
 
-        // Actualizar el portapapeles local solo si el mensaje recibido es diferente
         if (receivedData !== lastClipboardData) {
-            clipboardy.writeSync(receivedData);
-            console.log(`Updated local clipboard with data received from ${normalizedAddress}:${socket.remotePort}: ${receivedData}`);
-            lastClipboardData = receivedData; // Actualizar el último contenido del portapapeles
-
-            // Enviar la actualización a todos los nodos conectados, excepto al nodo actual
-            connectedNodes.forEach((client, nodeAddr) => {
-                if (nodeAddr !== normalizedAddress) {
-                    client.write(receivedData);
-                    console.log(`Sent updated clipboard data to ${nodeAddr}:${PORT}: ${receivedData}`);
-                }
-            });
+            updateClipboard(receivedData);
+            broadcastUpdate(receivedData, normalizedAddress);
         }
     });
 
     socket.on('end', () => {
-        console.log(`Node disconnected: ${normalizedAddress}:${socket.remotePort}`);
+        console.log(`Nodo desconectado: ${normalizedAddress}:${socket.remotePort}`);
     });
 
     connectedNodes.set(normalizedAddress, socket);
 });
 
-
-//Escucha las conexiones 
 server.on('listening', () => {
-    console.log(`Node is listening for TCP connections on port ${PORT}`);
+    console.log(`El nodo está escuchando conexiones TCP en el puerto ${PORT}`);
 
-    const knownNodeAddresses = ['100.64.196.59', '100.68.51.19']; //Cambiar la ips que desea conectarse
+    const knownNodeAddresses = ['100.64.196.59', '100.68.51.19']; // Cambiar las direcciones IP deseadas
 
     knownNodeAddresses.forEach((nodeAddress) => {
         if (!localIpAddresses.includes(nodeAddress) && nodeAddress !== '127.0.0.1') {
-            console.log(`Attempting to connect to node at ${nodeAddress}:${PORT}`);
+            console.log(`Intentando conectar al nodo en ${nodeAddress}:${PORT}`);
             connectToNode(nodeAddress);
         }
     });
 
     setInterval(() => {
-        const newClipboardData = clipboardy.readSync();
+        const newClipboardData = getClipboardText();
         if (newClipboardData !== lastClipboardData) {
-            lastClipboardData = newClipboardData;
-
-            // Enviar la actualización a todos los nodos conectados
-            connectedNodes.forEach((client, nodeAddr) => {
-                client.write(lastClipboardData);
-                console.log(`Sent updated clipboard data to ${nodeAddr}:${PORT}: ${lastClipboardData}`);
-            });
+            updateClipboard(newClipboardData);
+            broadcastUpdate(newClipboardData);
         }
     }, 1000);
 });
@@ -139,9 +138,18 @@ server.on('listening', () => {
 server.listen(PORT);
 
 process.on('SIGINT', () => {
-    console.log('Server terminated by user.');
+    console.log('Servidor terminado por el usuario.');
     server.close(() => {
-        console.log('Server closed.');
+        console.log('Servidor cerrado.');
         process.exit(0);
     });
 });
+
+function broadcastUpdate(data, senderAddress) {
+    connectedNodes.forEach((client, nodeAddr) => {
+        if (nodeAddr !== senderAddress) {
+            client.write(data);
+            console.log(`Enviado datos actualizados al nodo ${nodeAddr}:${PORT}: ${data}`);
+        }
+    });
+}
